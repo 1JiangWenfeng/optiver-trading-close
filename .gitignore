@@ -1,0 +1,41 @@
+# ---- Python ----
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.eggs/
+build/
+dist/
+.venv/
+venv/
+env/
+ENV/
+.ipynb_checkpoints/
+
+# ---- Jupyter ----
+.ipynb_checkpoints/
+*.ipynb_checkpoints/
+
+# ---- 竞赛数据 / 模型产物 ----
+# 原始数据集与训练输出体积较大，不入库；按需在本机放置
+data/
+input/
+output/
+*.pkl
+*.pickle
+*.pt
+*.pth
+*.ckpt
+*.h5
+*.joblib
+*.model
+
+# ---- 环境与编辑器 ----
+.env
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+
+# ---- 注：optiver2023/*.so 为竞赛官方预编译扩展，需要入库 ----
+!optiver2023/*.so
