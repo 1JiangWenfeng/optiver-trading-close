@@ -8,7 +8,6 @@ LSTM 模型使用原始特征并叠加目标值滞后项（target lag）。该�
 
 - **成绩**：公开排行榜（public leaderboard）得分 5.3508。
 - **特征**：原始特征 + 目标值滞后项。
-- **Notebook**：实现见 Kaggle 用户名 `nimashahbazi` 下的 notebook。
 
 ## ConvNet 模型
 
@@ -17,7 +16,6 @@ ConvNet 模型则仅使用不平衡特征配合原始特征。
 - **成绩**：公开排行榜得分 5.3439，主要收益来自残差部分。
 - **特征**：包含不平衡（imbalance）特征。
 - **改进建议**：再加入全局股票映射（global stock mapping）等若干特征，成绩可较容易提升至 5.33X。
-- **Notebook**：实现同样发布在 Kaggle 用户名 `nimashahbazi` 下。
 
 ## 相关文档
 
