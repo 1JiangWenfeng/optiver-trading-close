@@ -1,30 +1,26 @@
-# Optiver Trading at the Close Analysis with LSTM and ConvNet
+# Optiver 收盘竞价预测（LSTM 与 ConvNet）
 
-This repository contains two machine learning models developed for analyzing Optiver trading at the close on Kaggle [Optiver Trading at the Close Competition Overview](https://www.kaggle.com/competitions/optiver-trading-at-the-close/overview): a Long Short-Term Memory (LSTM) model and a Convolutional Neural Network (ConvNet) model. Both models are designed to predict stock return using raw features without any feature engineering and a small set of imbalance features only.
+本仓库包含两个用于 Kaggle [Optiver Trading at the Close](https://www.kaggle.com/competitions/optiver-trading-at-the-close/overview) 竞赛的机器学习模型：长短期记忆网络（LSTM）模型和卷积神经网络（ConvNet）模型。两个模型都不做特征工程，前者仅使用原始特征，后者仅使用原始特征加少量不平衡（imbalance）特征，用于预测股票收益率。
 
-## LSTM Model
+## LSTM 模型
 
-The LSTM model is built using raw features along with target lag. This model emphasizes the temporal sequence of the data, capturing patterns over time without extensive feature engineering.
+LSTM 模型使用原始特征并叠加目标值滞后项（target lag）。该模型侧重数据的时序结构，在不引入大量特征工程的前提下捕捉时间维度上的模式。
 
-- **Performance**: The model achieved a score of 5.3508 on the public leaderboard.
-- **Features**: Utilizes raw features and target lag.
-- **Notebook**: The model's implementation can be found on Kaggle under the username `nimashahbazi`.
+- **成绩**：公开排行榜（public leaderboard）得分 5.3508。
+- **特征**：原始特征 + 目标值滞后项。
+- **Notebook**：实现见 Kaggle 用户名 `nimashahbazi` 下的 notebook。
 
-## ConvNet Model
+## ConvNet 模型
 
-The ConvNet model, in contrast, incorporates imbalance features only with raw feature
+ConvNet 模型则仅使用不平衡特征配合原始特征。
 
-- **Performance**: This model scored 5.3439 on the public leaderboard, the key performace comes from the residual part.
-- **Features**: Includes imbalance features.
-- **Improvement Suggestion**: By adding couple more features like global stock mapping, the performance could easily reach 5.33X.
-- **Notebook**: The ConvNet model's implementation is also available on Kaggle under the username `nimashahbazi`. 
+- **成绩**：公开排行榜得分 5.3439，主要收益来自残差部分。
+- **特征**：包含不平衡（imbalance）特征。
+- **改进建议**：再加入全局股票映射（global stock mapping）等若干特征，成绩可较容易提升至 5.33X。
+- **Notebook**：实现同样发布在 Kaggle 用户名 `nimashahbazi` 下。
 
-## Getting Started
+## 相关文档
 
-These models are publicly available for review and improvement. To access the notebooks and explore the models:
-
-1. Visit the Kaggle platform.
-2. Search for the username `nimashahbazi`.
-3. Navigate to the respective notebooks for the LSTM and ConvNet models.
-
-
+- [FEATURE_ENGINEERING.md](FEATURE_ENGINEERING.md)：`optiver-258-lgb-submit` 的特征工程文档，含 258 个入模特征的分类清单、公式说明，以及可迁移的设计经验与数据泄漏陷阱。
+- [feature_list_258.json](feature_list_258.json)：机器可读的特征清单，按流水线阶段分组。
+- [feature_list_audit.py](feature_list_audit.py)：实跑 notebook 流水线以复现上述特征清单的审计脚本。
