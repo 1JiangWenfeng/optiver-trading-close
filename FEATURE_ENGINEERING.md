@@ -89,10 +89,10 @@ lgb_features = [col for col in train_eng.columns if col not in excluded_columns]
 
 **记号约定**
 
-- $s$ = `stock_id`，$d$ = `date_id`，$t$ = `seconds_in_bucket`
-- $X(s,d,t)$ = 某原始字段在 (股票, 日, 秒桶) 处的取值
-- $k$ = 滞后步数，**1 步 = 10 秒**
-- $I(\cdot)$ = 指示函数
+- `s` = `stock_id`，`d` = `date_id`，`t` = `seconds_in_bucket`
+- `X(s, d, t)` = 某原始字段在 (股票, 日, 秒桶) 处的取值
+- `k` = 滞后步数，**1 步 = 10 秒**
+- `I(·)` = 指示函数
 
 ---
 
@@ -102,17 +102,17 @@ lgb_features = [col for col in train_eng.columns if col not in excluded_columns]
 
 | 特征名 | 公式 | 设计意图 |
 |---|---|---|
-| `spread_eng` | $\text{ask\_price} - \text{bid\_price}$ | 买卖价差，流动性的直接度量 |
-| `volume_eng` | $\text{bid\_size} + \text{ask\_size}$ | 盘口总量 |
-| `volumne_imbalance_eng` | $\text{bid\_size} - \text{ask\_size}$ | 盘口量净失衡（**注意原代码拼写为 `volumne`**） |
-| `weighted_imbalance_eng` | $\text{imbalance\_size} \times \text{imb\_buy\_sell\_flag}$ | **带符号**的失衡量；原注释标为 "very important" |
-| `imbalance_ratio` | $\dfrac{\text{imbalance\_size}}{\text{matched\_size}}$ | 失衡量相对成交量 |
-| `price_spread_near_far` | $\text{near\_price} - \text{far\_price}$ | 近远端理论价差 |
-| `price_wap_difference_eng` | $\text{reference\_price} - \text{wap}$ | 参考价对成交均价偏离 |
-| `bid_ask_ratio` | $\dfrac{\text{bid\_size}}{\text{ask\_size}}$ | 盘口量比 |
-| `imbalance_to_bid_ratio_eng` | $\dfrac{\text{imbalance\_size}}{\text{bid\_size}}$ | 失衡量相对买盘 |
-| `imbalance_to_ask_ratio_eng` | $\dfrac{\text{imbalance\_size}}{\text{ask\_size}}$ | 失衡量相对卖盘 |
-| `matched_size_to_total_size_ratio_eng` | $\dfrac{\text{matched\_size}}{\text{bid\_size} + \text{ask\_size}}$ | 成交占盘口比 |
+| `spread_eng` | `ask_price - bid_price` | 买卖价差，流动性的直接度量 |
+| `volume_eng` | `bid_size + ask_size` | 盘口总量 |
+| `volumne_imbalance_eng` | `bid_size - ask_size` | 盘口量净失衡（**注意原代码拼写为 `volumne`**） |
+| `weighted_imbalance_eng` | `imbalance_size × imb_buy_sell_flag` | **带符号**的失衡量；原注释标为 "very important" |
+| `imbalance_ratio` | `imbalance_size / matched_size` | 失衡量相对成交量 |
+| `price_spread_near_far` | `near_price - far_price` | 近远端理论价差 |
+| `price_wap_difference_eng` | `reference_price - wap` | 参考价对成交均价偏离 |
+| `bid_ask_ratio` | `bid_size / ask_size` | 盘口量比 |
+| `imbalance_to_bid_ratio_eng` | `imbalance_size / bid_size` | 失衡量相对买盘 |
+| `imbalance_to_ask_ratio_eng` | `imbalance_size / ask_size` | 失衡量相对卖盘 |
+| `matched_size_to_total_size_ratio_eng` | `matched_size / (bid_size + ask_size)` | 成交占盘口比 |
 
 > **复用机制**：上表 11 个中有 **8 个以 `_eng` 结尾**（除 `imbalance_ratio`、`price_spread_near_far`、
 > `bid_ask_ratio` 之外的 8 个）。流水线用子串匹配 `"_eng" in feature` 把它们筛出来，
@@ -123,11 +123,11 @@ lgb_features = [col for col in train_eng.columns if col not in excluded_columns]
 
 ### 3.2 盘口不平衡特征 —— 21 个
 
-核心公式（对任意两个字段 $A, B$）：
+核心公式（对任意两个字段 `A, B`）：
 
-$$
-\text{imb}(A,B) = \frac{A - B}{A + B}
-$$
+```text
+imb(A, B) = (A - B) / (A + B)
+```
 
 实现上对字段集合做 **C(n,2) 两两组合**，并按字典序排序保证命名稳定：
 
@@ -145,19 +145,19 @@ for col1, col2 in combinations(columns, 2):
 
 命名示例：`ask_size_bid_size_imb_sz_`、`far_price_reference_price_imb_pr_`。
 
-> **归一化价值**：$\frac{A-B}{A+B}$ 天然落在 $[-1, 1]$，把不同量纲的字段（价格 ~100、股数 ~10⁶）
-> 拉到同一尺度，且对"整体放大/缩小"免疫。这比裸差值 $A-B$ 更适合跨股票、跨时段泛化。
+> **归一化价值**：`(A - B) / (A + B)` 天然落在 `[-1, 1]`，把不同量纲的字段（价格 ~100、股数 ~10⁶）
+> 拉到同一尺度，且对"整体放大/缩小"免疫。这比裸差值 `A - B` 更适合跨股票、跨时段泛化。
 >
-> **注意**：价格不平衡 $\frac{P_1-P_2}{P_1+P_2}$ 在价格量级下数值极小（分母约 200，分子约 0.01 量级），
+> **注意**：价格不平衡 `(P_1 - P_2) / (P_1 + P_2)` 在价格量级下数值极小（分母约 200，分子约 0.01 量级），
 > 树模型仍可用，但若换用线性模型需要额外缩放。
 
 ---
 
 ### 3.3 日内差分特征 —— 133 个
 
-$$
-\Delta_k X(s,d,t) = X(s,d,t) - X(s,d,t-k)
-$$
+```text
+Δ_k X(s, d, t) = X(s, d, t) - X(s, d, t - k)
+```
 
 实现：按 `(stock_id, date_id)` 分组后 `shift(k)`。
 
@@ -190,9 +190,9 @@ new_column = df[column] - lagged_df[column]
 
 ### 3.4 日内累计特征 —— 18 个
 
-$$
-C_X(s,d,t) = \sum_{t' \le t} X(s,d,t')
-$$
+```text
+C_X(s, d, t) = Σ_{t' ≤ t} X(s, d, t')
+```
 
 实现：按 `(stock_id, date_id)` 分组做 `cumsum()`。
 
@@ -209,9 +209,9 @@ $$
 
 ### 3.5 横截面偏离特征 —— 25 个
 
-$$
-D_X(s,d,t) = X(s,d,t) - \operatorname{median}_{s'}\big[X(s',d,t)\big]
-$$
+```text
+D_X(s, d, t) = X(s, d, t) - median_{s'}[ X(s', d, t) ]
+```
 
 实现：按 `(date_id, seconds_in_bucket)` 分组取中位数，再逐行相减。
 
@@ -238,9 +238,9 @@ df[f'deviation_from_median_{feature}'] = df[feature] - grouped_median
 
 ### 3.6 目标滞后特征 —— 12 个
 
-$$
-\text{lag}_k\text{\_target}(s,d,t) = \text{target}(s,\, d-k,\, t)
-$$
+```text
+lag_k_target(s, d, t) = target(s, d - k, t)
+```
 
 实现：以 `(stock_id, seconds_in_bucket)` 为分组、按 `date_id` 排序后 `shift(k)`。
 
@@ -251,7 +251,7 @@ df_indexed[f'lag{k}_target'] = df_indexed.groupby(
 ```
 
 **关键区别**：与 3.3 的**日内**差分不同，这里是**跨日**滞后——
-取"同一只股票、同一秒桶、前 $k$ 个交易日"的目标值，$k \in [1, 12]$。
+取"同一只股票、同一秒桶、前 `k` 个交易日"的目标值，`k ∈ [1, 12]`。
 
 > **为何同秒对齐**：收盘竞价的微观结构随时间桶剧烈变化（越接近收盘，失衡越剧烈）。
 > 用"昨天的同一秒"作参照，比"昨天的同一时刻但不区分秒"精确得多。
@@ -269,12 +269,12 @@ df_indexed[f'lag{k}_target'] = df_indexed.groupby(
 |---|---|
 | `global_{mean,median,std,min,max,q25,q75}_bid_size` | 对 `bid_size` 的对应聚合（7 个） |
 | `global_{mean,median,std,min,max,q25,q75}_ask_size` | 对 `ask_size` 的对应聚合（7 个） |
-| `global_median_size` | $\operatorname{median}(\text{bid\_size}) + \operatorname{median}(\text{ask\_size})$ |
-| `global_std_size` | $\operatorname{std}(\text{bid\_size}) + \operatorname{std}(\text{ask\_size})$ |
-| `global_ptp_size` | $\max(\text{bid\_size}) - \min(\text{bid\_size})$ |
-| `global_median_price` | $\operatorname{median}(\text{bid\_price}) + \operatorname{median}(\text{ask\_price})$ |
-| `global_std_price` | $\operatorname{std}(\text{bid\_price}) + \operatorname{std}(\text{ask\_price})$ |
-| `global_ptp_price` | $\max(\text{bid\_price}) - \min(\text{ask\_price})$ |
+| `global_median_size` | `median(bid_size) + median(ask_size)` |
+| `global_std_size` | `std(bid_size) + std(ask_size)` |
+| `global_ptp_size` | `max(bid_size) - min(bid_size)` |
+| `global_median_price` | `median(bid_price) + median(ask_price)` |
+| `global_std_price` | `std(bid_price) + std(ask_price)` |
+| `global_ptp_price` | `max(bid_price) - min(ask_price)` |
 
 实现方式是先构造成字典再 `map` 回原表：
 
@@ -302,11 +302,11 @@ def map_global(df, dict):
 
 | 特征名 | 公式 |
 |---|---|
-| `target_mean` | $\frac{1}{12}\sum_{k=1}^{12} \text{lag}_k\text{\_target}$ |
-| `target_std_dev` | $\operatorname{std}_{k}(\text{lag}_k\text{\_target})$ |
-| `target_variance` | $\operatorname{var}_{k}(\text{lag}_k\text{\_target})$ |
-| `target_median` | $\operatorname{median}_{k}(\text{lag}_k\text{\_target})$ |
-| `target_range` | $\max_k - \min_k$ |
+| `target_mean` | `(1/12) × Σ_{k=1..12} lag_k_target` |
+| `target_std_dev` | `std_k(lag_k_target)` |
+| `target_variance` | `var_k(lag_k_target)` |
+| `target_median` | `median_k(lag_k_target)` |
+| `target_range` | `max_k - min_k` |
 
 > **作用**：把 12 个离散滞后压缩成"该股票近 12 日的表现形态"——
 > 均值代表历史收益水平，标准差/极差代表历史波动性。这是**时序特征的降维池化**，
@@ -377,7 +377,7 @@ notebook 的 `dates_train = [0, 480]`（全量）与 `[0, 390] / [391, 480]`（�
 ### 5.3 除零与无穷大
 
 - `imbalance_ratio` 分母 `matched_size` 可为 0；
-- `compute_imbalances` 的 $\frac{A-B}{A+B}$ 在 $A=B=0$ 时得到 `0/0`。
+- `compute_imbalances` 的 `(A - B) / (A + B)` 在 `A = B = 0` 时得到 `0/0`。
 
 代码在流水线末尾统一兜底：
 
@@ -430,11 +430,11 @@ notebook 中另有 5 个函数定义了却从未被 `feature_pipeline()` 调用�
 
 | 函数 | 产出公式 | 状态与说明 |
 |---|---|---|
-| `create_features_to_start_optimized` | $X(s,d,t) - X(s,d,\text{open})$，即相对**当日首个桶**的偏移 | 未启用。与 `_diff_lag` 互补：给出相对开盘的**累积**偏移基准 |
-| `compute_percentage_difference` | $\dfrac{A-B}{B} \times 100$ | 未启用。与 `_imb_pr_` 是同一族的不同归一化方式（百分比差 vs 对称归一化），可作 A/B 对照 |
+| `create_features_to_start_optimized` | `X(s, d, t) - X(s, d, open)`，即相对**当日首个桶**的偏移 | 未启用。与 `_diff_lag` 互补：给出相对开盘的**累积**偏移基准 |
+| `compute_percentage_difference` | `(A - B) / B × 100` | 未启用。与 `_imb_pr_` 是同一族的不同归一化方式（百分比差 vs 对称归一化），可作 A/B 对照 |
 | `calculate_stat` | 对任意列集合做行内 `mean/std/var/median/range` | 未启用。是 3.8 `calculate_stat_lag` 的**泛化版本**（可作用于价格字段而非仅 target 滞后） |
 | `create_autocorrelation_features` | 名义上为自相关特征 | 未启用，且**实现有误**（见 5.7） |
-| `flatten_outliers_y_train` | $\text{clip}(y, Q_{0.01}, Q_{0.99})$ | 未启用。作用于**标签**而非特征：分位数截断以抑制 `target` 的极端值 |
+| `flatten_outliers_y_train` | `clip(y, Q_0.01, Q_0.99)` | 未启用。作用于**标签**而非特征：分位数截断以抑制 `target` 的极端值 |
 
 > **另外两处被注释掉的开关**（在 `feature_pipeline` 内）：
 > - `deviation_cols` 中 `#+ imb_features_price` 被注释 → 价格不平衡**未参与**横截面偏离（差 15 个特征）；
